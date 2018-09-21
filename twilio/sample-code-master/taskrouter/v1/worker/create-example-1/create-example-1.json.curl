@@ -1,0 +1,11 @@
+ATTRIBUTES=$(cat << EOF
+{
+    "type": "support"
+}
+EOF
+)
+
+curl -X POST https://taskrouter.twilio.com/v1/Workspaces/WSXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Workers \
+--data-urlencode "Attributes=$ATTRIBUTES" \
+--data-urlencode "FriendlyName=Support Worker 1" \
+-u ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:your_auth_token

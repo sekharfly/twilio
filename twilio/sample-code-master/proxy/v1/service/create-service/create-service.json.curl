@@ -1,0 +1,4 @@
+curl -X POST https://proxy.twilio.com/v1/Services \
+--data-urlencode "CallbackUrl=https://www.example.com/" \
+--data-urlencode "UniqueName=My Awesome Service" \
+-u ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:your_auth_token

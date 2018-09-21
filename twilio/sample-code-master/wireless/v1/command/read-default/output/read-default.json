@@ -1,0 +1,25 @@
+{
+  "commands": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "command": "command",
+      "command_mode": "text",
+      "date_created": "2015-07-30T20:00:00Z",
+      "date_updated": "2015-07-30T20:00:00Z",
+      "sim_sid": "DEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "direction": "from_sim",
+      "sid": "DCXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "status": "queued",
+      "url": "https://wireless.twilio.com/v1/Commands/DCXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  ],
+  "meta": {
+    "first_page_url": "https://wireless.twilio.com/v1/Commands?PageSize=50&Page=0",
+    "key": "commands",
+    "next_page_url": "https://wireless.twilio.com/v1/Commands?PageSize=50&Page=1",
+    "page": 0,
+    "page_size": 50,
+    "previous_page_url": "https://wireless.twilio.com/v1/Commands?PageSize=50&Page=0",
+    "url": "https://wireless.twilio.com/v1/Commands?PageSize=50&Page=0"
+  }
+}

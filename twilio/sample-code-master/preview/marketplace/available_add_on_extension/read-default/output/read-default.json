@@ -1,0 +1,22 @@
+{
+  "extensions": [
+    {
+      "sid": "XFXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "available_add_on_sid": "XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "friendly_name": "Incoming Voice Call",
+      "product_name": "Programmable Voice",
+      "unique_name": "voice-incoming",
+      "url": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions/XFXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  ],
+  "meta": {
+    "page": 0,
+    "page_size": 50,
+    "first_page_url": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions?PageSize=50&Page=0",
+    "previous_page_url": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions?PageSize=50&Page=0",
+    "url": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions?PageSize=50&Page=0",
+    "next_page_url": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions?PageSize=50&Page=1",
+    "key": "extensions"
+  },
+  "available_add_on_sid": "XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}

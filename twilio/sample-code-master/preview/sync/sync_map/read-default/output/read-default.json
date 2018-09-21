@@ -1,0 +1,29 @@
+{
+  "maps": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "created_by": "created_by",
+      "date_created": "2015-07-30T20:00:00Z",
+      "date_updated": "2015-07-30T20:00:00Z",
+      "links": {
+        "items": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps/MPXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Items",
+        "permissions": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps/MPXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Permissions"
+      },
+      "revision": "revision",
+      "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "sid": "MPXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "unique_name": "unique_name",
+      "url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps/MPXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  ],
+  "meta": {
+    "first_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps?PageSize=50&Page=0",
+    "key": "maps",
+    "next_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps?PageSize=50&Page=1",
+    "page": 0,
+    "page_size": 50,
+    "previous_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps?PageSize=50&Page=0",
+    "url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps?PageSize=50&Page=0"
+  },
+  "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}

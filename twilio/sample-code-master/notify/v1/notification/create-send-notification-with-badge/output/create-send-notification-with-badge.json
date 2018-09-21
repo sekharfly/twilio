@@ -1,0 +1,33 @@
+{
+  "sid": "NOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "date_created": "2016-03-24T23:42:28Z",
+  "identities": [
+    "jing"
+  ],
+  "tags": [],
+  "segments": [],
+  "priority": "high",
+  "ttl": 2419200,
+  "title": "test",
+  "body": "body",
+  "sound": null,
+  "action": null,
+  "data": null,
+  "apn": {
+    "aps": {
+      "alert": {
+        "title": "Bob alert",
+        "body": "Bob, you just received a badge"
+      },
+      "badge": "1"
+    }
+  },
+  "fcm": null,
+  "gcm": null,
+  "sms": null,
+  "facebook_messenger": null,
+  "alexa": null,
+  "identity": "00000001"
+}

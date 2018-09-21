@@ -1,0 +1,34 @@
+{
+  "end": 0,
+  "first_page_uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers?PageSize=1&Page=0",
+  "last_page_uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers?PageSize=1&Page=626",
+  "next_page_uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers?PageSize=1&Page=1",
+  "num_pages": 627,
+  "page": 0,
+  "page_size": 1,
+  "previous_page_uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers?PageSize=1&Page=0",
+  "start": 0,
+  "total": 627,
+  "uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers",
+  "usage_triggers": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "api_version": "2010-04-01",
+      "callback_method": "GET",
+      "callback_url": "http://cap.com/streetfight",
+      "current_value": "0",
+      "date_created": "Sun, 06 Sep 2015 12:58:45 +0000",
+      "date_fired": null,
+      "date_updated": "Sun, 06 Sep 2015 12:58:45 +0000",
+      "friendly_name": "raphael-cluster-1441544325.86",
+      "recurring": "yearly",
+      "sid": "UTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "trigger_by": "price",
+      "trigger_value": "50",
+      "uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Triggers/UTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "usage_category": "totalprice",
+      "usage_record_uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Usage/Records?Category=totalprice"
+    }
+  ],
+  "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}

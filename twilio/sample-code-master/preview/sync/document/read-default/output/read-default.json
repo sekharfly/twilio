@@ -1,0 +1,29 @@
+{
+  "documents": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "created_by": "created_by",
+      "data": {},
+      "date_created": "2015-07-30T20:00:00Z",
+      "date_updated": "2015-07-30T20:00:00Z",
+      "revision": "revision",
+      "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "sid": "ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "unique_name": "unique_name",
+      "url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "links": {
+        "permissions": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Permissions"
+      }
+    }
+  ],
+  "meta": {
+    "first_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents?PageSize=50&Page=0",
+    "key": "documents",
+    "next_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents?PageSize=50&Page=1",
+    "page": 0,
+    "page_size": 50,
+    "previous_page_url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents?PageSize=50&Page=0",
+    "url": "https://preview.twilio.com/Sync/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents?PageSize=50&Page=0"
+  },
+  "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}

@@ -1,0 +1,25 @@
+{
+  "permissions": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "document_sid": "ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "identity": "identity",
+      "read": true,
+      "write": true,
+      "manage": true,
+      "url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Permissions/identity"
+    }
+  ],
+  "meta": {
+    "first_page_url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/sidOrUniqueName/Permissions?PageSize=50&Page=0",
+    "key": "permissions",
+    "next_page_url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/sidOrUniqueName/Permissions?PageSize=50&Page=1",
+    "page": 0,
+    "page_size": 50,
+    "previous_page_url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/sidOrUniqueName/Permissions?PageSize=50&Page=0",
+    "url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents/sidOrUniqueName/Permissions?PageSize=50&Page=0"
+  },
+  "document_sid": "ETXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "service_sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}

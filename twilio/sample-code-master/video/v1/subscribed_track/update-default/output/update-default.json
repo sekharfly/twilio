@@ -1,0 +1,12 @@
+{
+  "publisher_sid": "PAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "subscriber_sid": "PAXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "room_sid": "RMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "date_created": null,
+  "date_updated": null,
+  "sid": "MTXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "name": "bob-track",
+  "kind": "data",
+  "enabled": null,
+  "track": null
+}

@@ -1,0 +1,13 @@
+DATA=$(cat << EOF
+{
+    "attack": 49,
+    "name": "Bulbasaur",
+    "number": "001"
+}
+EOF
+)
+
+curl -X POST https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Lists/MyCollection/Items \
+--data-urlencode "Ttl=864000" \
+--data-urlencode "Data=$DATA" \
+-u ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:your_auth_token

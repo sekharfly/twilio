@@ -1,0 +1,4 @@
+curl -X POST https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Lists \
+--data-urlencode "Ttl=1814400" \
+--data-urlencode "UniqueName=MyCollection" \
+-u ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:your_auth_token

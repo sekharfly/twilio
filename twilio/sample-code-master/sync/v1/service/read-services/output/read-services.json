@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "first_page_url": "https://sync.twilio.com/v1/Services?PageSize=50&Page=0",
+    "key": "services",
+    "next_page_url": "https://sync.twilio.com/v1/Services?PageSize=50&Page=1",
+    "page": 0,
+    "page_size": 50,
+    "previous_page_url": "https://sync.twilio.com/v1/Services?PageSize=50&Page=0",
+    "url": "https://sync.twilio.com/v1/Services?PageSize=50&Page=0"
+  },
+  "services": [
+    {
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "date_created": "2015-07-30T20:00:00Z",
+      "date_updated": "2015-07-30T20:00:00Z",
+      "friendly_name": "friendly_name",
+      "links": {
+        "documents": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Documents",
+        "lists": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Lists",
+        "maps": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Maps",
+        "streams": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Streams"
+      },
+      "sid": "ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "unique_name": "unique_name",
+      "url": "https://sync.twilio.com/v1/Services/ISXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "webhook_url": "http://www.example.com",
+      "reachability_webhooks_enabled": false,
+      "acl_enabled": false
+    }
+  ]
+}

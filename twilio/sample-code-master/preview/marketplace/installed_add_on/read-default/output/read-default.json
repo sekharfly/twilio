@@ -1,0 +1,30 @@
+{
+  "installed_add_ons": [
+    {
+      "sid": "XEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "friendly_name": "VoiceBase High Accuracy Transcription",
+      "description": "Automatic Transcription and Keyword Extract...",
+      "configuration": {
+        "bad_words": true
+      },
+      "unique_name": "voicebase_high_accuracy_transcription",
+      "date_created": "2016-04-07T23:52:28Z",
+      "date_updated": "2016-04-07T23:52:28Z",
+      "url": "https://preview.twilio.com/marketplace/InstalledAddOns/XEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "links": {
+        "extensions": "https://preview.twilio.com/marketplace/InstalledAddOns/XEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Extensions",
+        "available_add_on": "https://preview.twilio.com/marketplace/AvailableAddOns/XBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      }
+    }
+  ],
+  "meta": {
+    "page": 0,
+    "page_size": 50,
+    "first_page_url": "https://preview.twilio.com/marketplace/InstalledAddOns?PageSize=50&Page=0",
+    "previous_page_url": "https://preview.twilio.com/marketplace/InstalledAddOns?PageSize=50&Page=0",
+    "url": "https://preview.twilio.com/marketplace/InstalledAddOns?PageSize=50&Page=0",
+    "next_page_url": "https://preview.twilio.com/marketplace/InstalledAddOns?PageSize=50&Page=1",
+    "key": "installed_add_ons"
+  }
+}

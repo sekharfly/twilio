@@ -1,0 +1,790 @@
+#%RAML 0.8
+title: Bandwidth REST API 
+version: v1
+baseUri: http://localhost:8082
+mediaType:  application/json
+/account:
+  displayName: Account
+  description:  Get an account information.  
+  get:
+     description: Get an account information.
+     responses: 
+       200:
+         body: 
+           application/json:
+/availableNumbers:
+      description: Get available numbers.
+      get:
+        description: Get available numbers.
+        queryParameters: 
+          areaCode:
+           type: Number
+           required: false
+          quantity :
+           type: Number
+           required: true
+          enableTNDetail:
+           type: Boolean
+           required: false
+          rateCenter:
+            type: String
+            required: false
+          city:
+            type: String
+            required: false
+          state:
+            type: String
+            required: false
+        responses: 
+          200:
+            body: 
+             application/json:
+/sites:
+      description: Create site and Get all sites information. 
+      get:
+        description: Get all the sites associated with the account.
+        responses: 
+          200:
+            body: 
+              application/json:
+          400: 
+            body: 
+              application/json: 
+      post: 
+        description: Create a site in the account.
+        body: 
+          application/json:
+            example : |
+              {
+                  "Site": {
+                    "Name": "Raleigh",
+                    "Description": "SIP gateway",
+                    "CustomerName": "BW",
+                    "Address": {
+                      "HouseNumber": "900",
+                      "StreetName": "Main Campus Drive",
+                    "City": "Raleigh",
+                      "StateCode": "NC",
+                      "ZipCode": "27606",
+                      "AddressType": "Service"
+                    }
+                  }
+                }
+                
+        responses: 
+          201: 
+            description: The site has been successfully added to the account
+            body: 
+              application/xml:    
+          400: 
+            description: Information is missing from the body of the add site request
+            body: 
+              application/xml:  
+                 
+      /{siteId}:
+        description: Get,Update and Delete a siteId with in the account. 
+        get:
+          description: Retrieve the information associated with the site id
+          responses: 
+            200:
+              body: 
+                application/json:
+        put:
+          description: Update the siteId with in the account. 
+          body: 
+            application/json: 
+              example : |
+                {
+                    "Site": {
+                      "Name": "Raleigh",
+                      "Description": "SIP gateway",
+                      "CustomerName": "BW",
+                      "Address": {
+                        "HouseNumber": "900",
+                        "StreetName": "Main Campus Drive",
+                      "City": "Raleigh",
+                        "StateCode": "NC",
+                        "ZipCode": "27606",
+                        "AddressType": "Service"
+                      }
+                    }
+                  }
+                
+          responses: 
+            200:
+              body: 
+                application/json:
+        delete:
+          description: Delete the site id
+          responses: 
+            200:
+              body: 
+                application/json:
+        /sippeers:
+            description: Information about a Sip Peer or set of Sip Peers. 
+            get:
+              description: Retrieve information about a Sip Peer or set of Sip Peers
+              responses: 
+                200:
+                  body: 
+                    application/json:
+            /{sippeerId}:
+                description: The SIPpeerID Resource deals with retrieving or updating a specific identified SIP Peer, identified by the SIP Peer ID. The elements of the payload are described in the /sippeers resource.
+                get:
+                  description: Retrieve a the data associated with a Sip Peer
+                  responses: 
+                    200:
+                      description: A successful result that contains the response data
+                      body: 
+                        application/json:
+                    400:
+                      description: Bad request - Sip Peer id is wrong
+                      body: 
+                        application/json:
+                
+                put:
+                  description: Update a Sip Peer  
+                  body: 
+                    application/json: 
+                      example : |
+                        {
+                          "SipPeer": {
+                            "PeerName": "NewYork2 loc",
+                            "Description": "NewYork SIP Gateway",
+                            "IsDefaultPeer": "true",
+                            "VoiceHosts": {
+                              "Host": [
+                                {
+                                  "HostName": "10.10.10.1",
+                                  "Port": "5070"
+                                },
+                                {
+                                  "HostName": "10.10.10.2"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                  responses: 
+                    200:
+                      description: Sip Peer updated
+                      body: 
+                        application/json:
+                    400:
+                      description: Bad Request. 
+                      body: 
+                        application/json:
+                delete:
+                    description: Delete a Sip Peer
+                    responses: 
+                      200:
+                        description: Sip Peer deleted
+                        body: 
+                          application/json:
+                      400:
+                        description: Bad request - Sip Peer not found
+                        body: 
+                          application/json:
+            
+                /tns:
+                      description: Retrieve information about a Telephone number or set of Telephone numbers
+                      get:
+                        queryParameters: 
+                          includeAttributes:
+                            description: If the value is false SipPeerTelephoneNumber will contain FullNumber tags only. This makes processing faster.
+                            default: true
+                            type: Boolean
+                        description: Retrieve information about a Telephone number or set of Telephone numbers
+                        responses: 
+                          200:
+                            description: A successful result that contains the response data
+                            body: 
+                              application/json:
+                          400:
+                            description: Bad request - Sip Peer id is wrong
+                            body: 
+                              application/json:
+                      /{tn}:
+                        description: Link for receiving information about telephone number
+                        get:
+                          description: Link for receiving information about telephone number
+                          responses: 
+                            200:
+                              description: CallForward, CallingNameDisplay, TnAttributes and MessagingSettings are not required in the response
+                              body: 
+                                application/json:
+                        put:
+                          description: Update the settings for TNs allocated to their account.  
+                          body: 
+                            application/json: 
+                              example : |
+                                 {
+                                    "SipPeerTelephoneNumber": {
+                                      "FullNumber": "2052160156",
+                                      "NumberFormat": "10digit",
+                                      "RPIDFormat": "10digit",
+                                      "RewriteUser": "false",
+                                      "CallForward": "7042661720",
+                                      "CallingNameDisplay": "true",
+                                      "TnAttributes": {
+                                        "TnAttribute": "Protected"
+                                      },
+                                      "MessagingSettings": {
+                                        "SmsEnabled": "true"
+                                      }
+                                    }
+                                  }
+                          responses: 
+                            200:
+                              description: There is no body response when request is successful
+                              body: 
+                                application/json:
+                            400:
+                              description: Bad Request. 
+                              body: 
+                                application/json:
+                                 
+                /movetns:
+                      description: This method moves desired Telephone Numbers to the given SIP peer.
+                      post: 
+                            description: This method moves desired Telephone Numbers to the given SIP peer.
+                            body: 
+                              application/json:
+                                example : |
+                                  {
+                                    "SipPeerTelephoneNumbers": {
+                                      "FullNumber": "9192300178"
+                                    }
+                                  }
+                            responses: 
+                              200: 
+                                description: The request has been successfully received.
+                                body: 
+                                  application/json:    
+                /totaltns:
+                      description: Retrieve count of Telephone numbers for Sip Peer
+                      get: 
+                            description: Retrieve count of Telephone numbers for Sip Peer
+                            queryParameters: 
+                              feature:
+                                description: one of (CNAM, LIDB), repeatable
+                                example: |
+                                  CNAM
+                            responses: 
+                              200: 
+                                description: A successful result that contains the response data.
+                                body: 
+                                  application/json:    
+                      
+         
+            post:
+              description: Create a Sip Peer. 
+              body: 
+                application/json: 
+                  example : |
+                    {
+                      "SipPeer": {
+                        "PeerName": "NewYork2 loc",
+                        "Description": "NewYork SIP Gateway",
+                        "IsDefaultPeer": "true",
+                        "VoiceHosts": {
+                          "Host": [
+                            {
+                              "HostName": "10.10.10.1",
+                              "Port": "5070"
+                            },
+                            {
+                              "HostName": "10.10.10.2"
+                            }
+                          ]
+                        }
+                      }
+                    }
+              responses: 
+                201:
+                  description: Sip Peer created
+                  body: 
+                    application/json:
+                400:
+                  description: Bad Request. 
+                  body: 
+                    application/json:
+                409:
+                  description: Conflict - Sip Peer with such name already exists
+                  body: 
+                    application/json:
+                503:
+                  description: Service unavailable
+                  body: 
+                    application/json:
+
+/orders:
+      description: Create a order and get order details.
+      get:
+        description: GET all orders for previously attempted Telephone Numbers.
+        queryParameters: 
+          page:
+           description: The page parameter indicates the number of pages to return in the payload.
+           type: number
+           default: 1
+           required: true
+           minimum: 1
+          size:
+           description: The size parameter indicates the number of orders to return in the payload.
+           type: number
+           default: 20
+           required: true
+           minimum: 1
+          customerOrderId:
+           description: The order ID that the Customer / Account assigned to the Order. The format is YY-MM-DD. ( 13-12-31)
+           type: string
+          userid:
+           description: The userid of the user that submitted the new number order. \n Ex - user@customer.co
+           type: string
+          status:
+           description: The status of the orders that should be in the returned set. Ex -(BACKORDERED, COMPLETE, PARTIAL, FAILED)
+           type: string
+        responses: 
+          200:
+            description: Ok
+            body: 
+              application/json:
+          204: 
+            description: No Content
+          400: 
+            description: Bad Request
+          404: 
+            description: Not Found
+      /{orderid}:
+        description: GET all of the details associated with an identified order. 
+        get:
+          description: GET all of the details associated with an identified order.
+          responses: 
+            200:
+              body: 
+                application/json:
+      /{orderid}/areaCodes:
+        description: Retrieves the area codes of the phone numbers from the specified order. 
+        get:
+          description: Retrieves the area codes of the phone numbers from the specified order.
+          responses: 
+            200:
+              body: 
+                application/json:
+      post:
+        description: Creates a request for Telephone Numbers.
+        body: 
+          application/json:
+            example: |
+                {
+                  "Order": {
+                    "Name": "Telephone Number order",
+                    "SiteId": "5892",
+                    "CustomerOrderId": "1234567890",
+                    "ExistingTelephoneNumberOrderType": {
+                      "TelephoneNumberList": {
+                        "TelephoneNumber": "4692515687"
+                      }
+                    }
+                  }
+                }
+        responses: 
+          200:
+            body: 
+              application/json:
+
+
+
+/discnumbers:
+      description: This API call provides information on numbers that have been disconnected from an account.
+      get:
+        description: Retrieves a list of disconnected numbers associated with the account. There are optional search parameters to limit the discNumbers payload
+        queryParameters: 
+          page:
+           description: The first disconnected number on the desired page. "1" is used as a convention for the first disconnected number in the collection
+           type: number
+           default: 1
+           required: true
+           minimum: 1
+          size:
+           description: The size parameter indicates the number of orders to return in the payload.
+           type: number
+           default: 300
+           required: true
+           minimum: 1
+          startdate:
+           description: The starting date of a search. startdate and enddate must be used as a pair.
+           type: string
+          enddate:
+           description: The ending date of a search. startdate and enddate must be used as a pair.
+           type: string
+        responses: 
+          200:
+            body: 
+             application/json
+      /totals:
+        description:  Retrieves a total number of disconnects..
+        get:
+          queryParameters: 
+            startdate:
+             description: The starting date of a search. startdate and enddate must be used as a pair.
+             type: string
+            enddate:
+             description: The ending date of a search. startdate and enddate must be used as a pair.
+             type: string
+          responses: 
+            200:
+              body: 
+                application/json:
+                  example: |
+                    {
+                      "Quantity": {
+                        "Count": "0"
+                      }
+                    }
+
+/disconnects:
+      description: Use this method to disconnect telephone numbers from the account.  
+      get:
+        description: Retrieve a list of disconnect orders that is associated with an account.
+        queryParameters: 
+          page:
+           description: The page parameter indicates the number of pages to return in the payload.
+           type: number
+           default: 1
+           required: true
+           minimum: 1
+          size:
+           description: The size parameter indicates the number of orders to return in the payload.
+           type: number
+           default: 300
+           required: true
+           minimum: 1
+          userid:
+           description: The user ID associated with disconnected phone numbers
+           type: string
+          status:
+           description: The status of the order
+           type: string
+          startdate:
+           description: Retrieves all phone numbers disconnected after this date. The start date also requires the end date to be specified..
+           type: string
+          enddate:
+           description: Retrieves all phone numbers disconnected before this date. The end date also requires the start date to be specified..
+           type: string
+        responses: 
+          200:
+            description: A list of Disconnect orders.
+            body: 
+              application/json:
+                example: |
+                   {
+                      "ResponseSelectWrapper": {
+                        "ListOrderIdUserIdDate": {
+                          "TotalCount": "7",
+                          "Links": {},
+                          "OrderIdUserIdDate": [
+                            {
+                              "CountOfTNs": "1",
+                              "userId": "smckinnon",
+                              "lastModifiedDate": "2014-01-10T17-34-15Z",
+                              "OrderId": "6d7da966-e071-4741-b31c-1d8932f4b8da",
+                              "OrderType": "disconnect",
+                              "OrderDate": "2014-01-10T17-34-15.797Z",
+                              "OrderStatus": "COMPLETE",
+                              "TelephoneNumberDetails": {}
+                            },
+                            {
+                              "CountOfTNs": "1",
+                              "userId": "jbm",
+                              "lastModifiedDate": "2013-12-04T21-59-32Z",
+                              "OrderId": "4ffe9262-1965-4479-a1d5-b8584440667d",
+                              "OrderType": "disconnect",
+                              "OrderDate": "2013-12-04T21-59-32.243Z",
+                              "OrderStatus": "COMPLETE",
+                              "TelephoneNumberDetails": {}
+                            }
+                          ]
+                        }
+                      }
+                    }
+          400: 
+            description: No disconnect orders are present on the indicated account.
+            body: 
+              application/json: 
+      post: 
+        description: Use this method to disconnect telephone numbers from the account.
+        body: 
+          application/json:
+            example : |
+              {
+                "DisconnectTelephoneNumberOrder": {
+                  "name": "training run",
+                  "DisconnectTelephoneNumberOrderType": {
+                    "TelephoneNumberList": {
+                      "TelephoneNumber": [
+                        "4158714245",
+                        "4352154439",
+                        "4352154466"
+                      ]
+                    },
+                    "Protected": "UNCHANGED"
+                  }
+                }
+              }
+                              
+        responses: 
+          201: 
+            description: The order has been created as described in the payload The Location header contains the url of the disconnect order that has been created.
+            body: 
+              application/json:    
+                 
+      /{disconnectid}:
+        description: The disconnect order's information has been successfully retrieved. 
+        get:
+          description: The disconnect order's information has been successfully retrieved.
+          responses: 
+            200:
+              body: 
+                application/json:
+/bdrs:
+  description: BDR records can be retrieved as a ZIP file for a specified date range. 
+  post: 
+    description:  Request a collection of BDRs records  These BDR records are delivered as a ZIP compressed comma separated values (CSV) file.
+    body: 
+      application/json: 
+        example: |
+          {
+            "Bdr": {
+              "StartDate": "2017-04-01",
+              "EndDate": "2017-04-30"
+            }
+          }
+    responses:
+      202:
+        description:  Request has been received and will be processed
+        headers: 
+          Location :
+            description: Location :- Header that can be used for retrieving the state of the request.
+            displayName: Location
+            type: string
+            required: true
+            example: |
+              bdrs/a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2
+      204: 
+        description: No Content
+      400: 
+        description: Error in processing the payload, perhaps something like incorrectly formatted or chosen dates.
+        body: 
+          application/json: 
+            example: |
+                {
+                  "BdrCreationResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "15501",
+                      "Description": "Invalid date range. Start date 2017-06-01 must be before end date 2017-04-30"
+                    }
+                  }
+                }
+  /{bdrid}:
+    description: A GET on the BDR ID will return a "still processing" indication if the file creation has not completed, or will redirect to the file to be downloaded.
+    get:
+      responses: 
+        200:
+          description: Request is valid, but that the file is not yet ready.
+          body: 
+            application/json:
+              example: |
+                {
+                  "BdrCreationResponse": {
+                    "Info": "The requested BDR archive is still being constructed, please check back later"
+                  }
+                }
+        303:
+          description:  Indicates that the file is ready.
+          headers: 
+            Location:
+              description: contains a URL to the file identified by the BDR ID
+              displayName: Location
+              type: string
+              required: true
+              example: |
+                bdrs/a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2/file
+        400:
+          description: BDR id is malformed.
+          body: 
+            application/json:
+               example: |
+                {
+                  "BdrRetrievalResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "1008",
+                      "Description": "'a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2' is not a valid UUID"
+                    }
+                  }
+                }
+        404:
+          description: BDR id cannot be found.
+          body: 
+            application/json:
+              example: |
+                  {
+                    "BdrRetrievalResponse": {
+                      "ResponseStatus": {
+                        "ErrorCode": "15001",
+                        "Description": "BDR archive was not found"
+                      }
+                    }
+                  }
+      
+  /{bdrid}/file:
+    description:  /file resource subtending a BDR ID will cause the download of the file.
+    get:
+      responses: 
+        200:
+          body: 
+            application/json:
+          headers: 
+            Content-Disposition:
+              required: true
+              type: string
+              example: |
+                attachment; filename=bdrs_2017-04-01_2017-04-30.zip  
+        400:
+          body: 
+            application/json:
+              example: |
+                {
+                  "BdrRetrievalResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "1008",
+                      "Description": "'a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2' is not a valid UUID"
+                    }
+                  }
+                }
+/billingreports:
+  description: Billing Reports can be retrieved as a ZIP file for a specified date range and type - 'BDR' 
+  post: 
+    description:  Request a collection of Billing Reports  These Billing Reports are delivered as a ZIP compressed comma separated values (CSV) file.
+    body: 
+      application/json: 
+        example: |
+           {
+              "BillingReport": {
+                "Type": "BDR",
+                "DateRange": {
+                   "StartDate": "2017-04-01",
+                   "EndDate": "2017-04-30"
+                }
+              }
+            }
+    responses:
+      201:
+        description:  Request has been received and will be processed
+        headers: 
+          Location :
+            description: Location :- Header that can be used for retrieving the state of the request.
+            displayName: Location
+            type: string
+            required: true
+            example: |
+              billingreports/a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2
+      204: 
+        description: No Content
+      400: 
+        description: Error in processing the payload, perhaps something like incorrectly formatted or chosen dates.
+        body: 
+          application/json: 
+            example: |
+                {
+                  "BillingReportCreationResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "15503",
+                      "Description": "Valid date is required (EndDate)"
+                    }
+                  }
+                }
+  /{reportid}:
+    description: A Billing Report will be generated.
+    get:
+      responses: 
+        200:
+          description: A Billing Report will be generated.
+          body: 
+            application/json:
+              example: |
+                {
+                  "BillingReportRetrievalResponse": {
+                    "ReportStatus": "COMPLETED",
+                    "Description": "The report archive is constructed."
+                  }
+                }
+        400:
+          description: Report ID is malformed. 
+          body: 
+            application/json:
+               example: |
+                {
+                  "BillingReportRetrievalResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "1008",
+                      "Description": "'9b428b4c-159b-465f-9667-' is not a valid UUID"
+                    }
+                  }
+                }
+  /{reportid}/file:
+    description:  A GET on the /file resource subtending a report ID will cause the download of the file.
+    get:
+      responses: 
+        200:
+          description: The request for the file download was accepted and will be processed.
+          body: 
+            application/json:
+          headers: 
+            Content-Disposition:
+              required: true
+              type: string
+              example: |
+                attachment; filename=bdrs_2017-04-01_2017-04-30.zip  
+        400:
+          description: The report ID is malformed.
+          body: 
+            application/json:
+              example: |
+                {
+                  "BdrRetrievalResponse": {
+                    "ResponseStatus": {
+                      "ErrorCode": "1008",
+                      "Description": "'a12b456c8-abcd-1a3b-a1b2-0a2b4c6d8e0f2' is not a valid UUID"
+                    }
+                  }
+                }
+
+/ordernumber:
+  description: create order
+  post:
+    body: 
+      application/json: 
+        example: |
+           {
+            "Order": {
+              "Name": "Telephone Number order",
+              "SiteId": "5892",
+              "CustomerOrderId": "1234567890",
+              "ExistingTelephoneNumberOrderType": {
+              "TelephoneNumberList": {
+                "TelephoneNumber": [
+                  "9193752369",
+                  "9193752720",
+                  "9193752648"
+                ]
+              }
+            }
+            }
+    responses: 
+       201:
+          body: 
+            application/json:
+              
+      
+      

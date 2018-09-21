@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:context="http://www.springframework.org/schema/context" xmlns:customresponse="http://www.mulesoft.org/schema/mule/customresponse" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/customresponse http://www.mulesoft.org/schema/mule/customresponse/current/mule-customresponse.xsd">
+    <http:listener-config name="api-httpListenerConfig" host="${hostName}" port="${port}" doc:name="IN HTTP Listener Configuration" basePath="bandwidth" />
+    <apikit:config name="api-config" raml="bandwidth.raml" consoleEnabled="false" doc:name="Router" />
+    <context:property-placeholder location="${environment}.properties" />
+    <http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="${bandwidth.hostName}" port="${bandwidth.port}" basePath="/v1.0/accounts" doc:name="OUT HTTP Request Configuration">
+        <http:basic-authentication username="${account.username}" password="${account.password}" />
+    </http:request-config>
+    <customresponse:config name="Customresponse__Configuration" doc:name="Customresponse: Configuration" />
+     <spring:beans>
+        <spring:bean id="objectStore" class="org.mule.util.store.SimpleMemoryObjectStore"/>
+        <spring:bean name="parseOrderedResponse" class="com.mncl.bandwidth.ParseOrderedResponse"/>
+        <spring:bean name="mapper" class="com.mncl.bandwidth.CustomParser"/>
+    </spring:beans>
+    <flow name="api-main">
+        <http:listener config-ref="api-httpListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="api-config" doc:name="APIkit Router" />
+    </flow>
+    <flow name="api-console">
+        <http:listener config-ref="api-httpListenerConfig" path="/*" doc:name="HTTP" allowedMethods="GET" />
+        <apikit:console config-ref="api-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="post:/ordernumber:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml"/>
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="OrderId" value="#[json:OrderResponse/Order/id]" doc:name="Variable"/>
+        <set-variable variableName="OrderStatus" value="#[json:OrderResponse/OrderStatus]" doc:name="Variable"/>
+        <logger message="OrderStatus :  #[flowVars.OrderStatus=='RECEIVED']  #['\n'] OrderId:  #[json:OrderResponse/Order/id]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.OrderStatus==&quot;RECEIVED&quot;]">
+                <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders/#[json:OrderResponse/Order/id]" method="GET" doc:name="HTTP"/>
+                <json:xml-to-json-transformer doc:name="XML to JSON"/>
+                <set-variable variableName="ChoiceOrderStatus" value="#[json:OrderResponse/OrderStatus]" doc:name="ChoiceOrderStatus"/>
+                <logger message=" #[payload]#[flowVars.OrderId]" level="INFO" doc:name="Logger"/>
+                <choice doc:name="Choice">
+                    <when expression="#[flowVars.ChoiceOrderStatus==&quot;COMPLETE&quot;]">
+                        <set-property propertyName="http.status" value="200" doc:name="Property"/>
+                        <invoke object-ref="parseOrderedResponse" method="parseOrder" methodArguments="#[payload.toString()],#[flowVars.OrderId]" doc:name="Invoke"/>
+                        <logger level="INFO" doc:name="Logger"/>
+                    </when>
+                    <otherwise >
+                        <until-successful maxRetries="2" millisBetweenRetries="1000" failureExpression="#[json:OrderResponse/OrderStatus=='FAILED']" synchronous="true" doc:name="Until Successful">
+                            <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders/#[flowVars.OrderId]" method="GET" doc:name="HTTP"/>
+                        </until-successful>
+                    </otherwise>
+                </choice>
+
+             </when>
+        </choice>
+        <choice-exception-strategy doc:name="bandwidthChoice_Exception_Strategy">
+            <catch-exception-strategy when="#[exception.causedBy(org.codehaus.jackson.JsonParseException)]" doc:name="Catch Exception Strategy">
+                <set-property propertyName="http.status" value="200" doc:name="Property"/>
+                <json:xml-to-json-transformer doc:name="XML to JSON"/>
+                <logger level="INFO" doc:name="Logger"/>
+                <invoke object-ref="parseOrderedResponse" method="parseOrder" methodArguments="#[payload.toString()],#[flowVars.OrderId]" doc:name="invoke"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+    <flow name="get:/account:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="/${account.id}" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <customresponse:prase config-ref="Customresponse__Configuration" response="#[payload.toString()]" statusCode="#[message.inboundProperties.'http.status']" doc:name="Customresponse" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+    </flow>
+    <flow name="get:/availableNumbers:api-config">
+        <set-variable variableName="request" value="#[message.inboundProperties.'http.query.params']" doc:name="Variable" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/availableNumbers" method="GET" doc:name="HTTP">
+            <http:request-builder>
+                <http:query-param paramName="areaCode" value="#[flowVars.request.areaCode]" />
+                <http:query-param paramName="quantity" value="#[flowVars.request.quantity]" />
+                <http:query-param paramName="enableTNDetail" value="#[flowVars.request.enableTNDetail]" />
+                <!--                 <http:query-param paramName="rateCenter" value="#[flowVars.request.rateCenter]" />
+                <http:query-param paramName="state" value="#[flowVars.request.state]" />
+                <http:query-param paramName="city" value="#[flowVars.request.city]" />
+ -->
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON"/>
+        <json:json-to-xml-transformer doc:name="JSON to XML"/>
+        <invoke object-ref="mapper" method="responseParser" methodArguments="#[payload.toString()]" doc:name="Invoke"/>
+
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="400" doc:name="Property" />
+            <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <object-to-string-transformer doc:name="Object to String"/>
+            <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+            <invoke  object-ref="mapper" method="errorParser" doc:name="Invoke" methodArguments="#[payload]"/>
+
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <!-- Sites -->
+    <flow name="get:/sites:api-config">
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites" method="GET" doc:name="HTTP" />
+        <logger level="INFO" doc:name="Logger" message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/sites:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <customresponse:prase config-ref="Customresponse__Configuration" response="#[payload.toString()]" statusCode="#[message.inboundProperties.'http.status']" doc:name="Customresponse" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}:api-config">
+        <set-variable variableName="uriparam" value="#[message.inboundProperties.'http.uri.params']" doc:name="Get UriParams Variable" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.uriparam.siteId]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="put:/sites/{siteId}:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]" method="PUT" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="delete:/sites/{siteId}:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]" method="DELETE" doc:name="HTTP" />
+        <choice doc:name="Choice">
+            <when expression="#[message.inboundProperties.'http.status'!=200]">
+                <json:xml-to-json-transformer doc:name="XML to JSON" />
+            </when>
+        </choice>
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}/sippeers:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/sites/{siteId}/sippeers:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <choice doc:name="Choice">
+            <when expression="#[message.inboundProperties.'http.status'!=201]">
+                <json:xml-to-json-transformer doc:name="XML to JSON" />
+            </when>
+        </choice>
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="HttpStatus" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}/sippeers/{sippeerId}:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="put:/sites/{siteId}/sippeers/{sippeerId}:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]" method="PUT" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <choice doc:name="Choice">
+            <when expression="#[message.inboundProperties.'http.status'!=200]">
+                <json:xml-to-json-transformer doc:name="XML to JSON" />
+            </when>
+        </choice>
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="HttpStatus" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="delete:/sites/{siteId}/sippeers/{sippeerId}:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]" method="DELETE" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}/sippeers/{sippeerId}/tns:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]/tns" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}/sippeers/{sippeerId}/tns/{tn}:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]/tns/{tn}" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="put:/sites/{siteId}/sippeers/{sippeerId}/tns/{tn}:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]/tns/{tn}" method="PUT" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="content-type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/sites/{siteId}/sippeers/{sippeerId}/totaltns:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]/totaltns" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/sites/{siteId}/sippeers/{sippeerId}/movetns:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/sites/#[flowVars.siteId]/sippeers/#[flowVars.sippeerId]/movetns" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="content-type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <!-- Orders -->
+    <flow name="post:/orders:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/orders:api-config">
+        <set-variable variableName="request" value="#[message.inboundProperties.'http.query.params']" doc:name="Variable" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders" method="GET" doc:name="HTTP">
+            <http:request-builder>
+                <http:query-param paramName="page" value="#[flowVars.request.page]" />
+                <http:query-param paramName="size" value="#[flowVars.request.size]" />
+                <http:query-param paramName="customerOrderId" value="#[flowVars.request.customerOrderId]" />
+                <http:query-param paramName="userid" value="#[flowVars.request.userid]" />
+                <http:query-param paramName="status" value="#[flowVars.request.status]" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/orders/{orderid}:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders/#[flowVars.orderid]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/orders/{orderid}/areaCodes:api-config">
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/orders/#[flowVars.orderid]/areaCodes" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/bdrs:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/bdrs" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/bdrs/{bdrid}:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/bdrs/#[flowVars.bdrid]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/bdrs/{bdrid}/file:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/bdrs/#[flowVars.bdrid]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/billingreports:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/billingreports" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/billingreports/{reportid}:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/billingreports/#[flowVars.reportid]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/billingreports/{reportid}/file:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/billingreports/#[flowVars.reportid]/file" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/discnumbers:api-config">
+        <set-variable variableName="request" value="#[message.inboundProperties.'http.query.params']" doc:name="Variable" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/discnumbers" method="GET" doc:name="HTTP">
+            <http:request-builder>
+                <http:query-param paramName="page" value="#[flowVars.request.page]" />
+                <http:query-param paramName="size" value="#[flowVars.request.size]" />
+                <http:query-param paramName="startdate" value="#[flowVars.request.startdate]" />
+                <http:query-param paramName="enddate" value="#[flowVars.request.enddate]" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/discnumbers/totals:api-config">
+        <set-variable variableName="request" value="#[message.inboundProperties.'http.query.params']" doc:name="Variable" />
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/discnumbers/totals" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/disconnects:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/disconnects" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="get:/disconnects/{disconnectid}:api-config">
+        <logger message="Request Path : #[message.inboundProperties.'http.request.uri']" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/disconnects/#[flowVars.disconnectid]" method="GET" doc:name="HTTP" />
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+    <flow name="post:/disconnects:api-config">
+        <json:json-to-xml-transformer doc:name="JSON to XML" />
+        <logger message="#['\n'] #[&quot;Request Path :  &quot;+message.inboundProperties.'http.request.uri'] #['\n'] #[&quot;Request : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <http:request config-ref="HTTP_Request_Configuration" path="${account.id}/disconnects" method="POST" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/xml" />
+            </http:request-builder>
+        </http:request>
+        <json:xml-to-json-transformer doc:name="XML to JSON" />
+        <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="ERROR" doc:name="Logger" />
+        </catch-exception-strategy>
+    </flow>
+
+    <apikit:mapping-exception-strategy name="GlobalExceptionMapping">
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{&quot;status&quot;:&quot;error&quot;,&quot;errors&quot;:[{&quot;code&quot;:&quot;400&quot;,&quot;message&quot;:&quot;Bad Request&quot;}]}" doc:name="Set Payload" mimeType="application/json" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{&quot;status&quot;:&quot;error&quot;,&quot;errors&quot;:[{&quot;code&quot;:&quot;404&quot;,&quot;message&quot;:&quot;Not Found&quot;}]}" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{&quot;status&quot;:&quot;error&quot;,&quot;errors&quot;:[{&quot;code&quot;:&quot;415&quot;,&quot;message&quot;:&quot;Unsupported MediaType&quot;}]}" doc:name="Set Payload" mimeType="application/json" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="500">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{&quot;status&quot;:&quot;error&quot;,&quot;errors&quot;:[{&quot;code&quot;:&quot;500&quot;,&quot;message&quot;:&quot;Internal Server Error&quot;}]}" doc:name="Set Payload" mimeType="application/json" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

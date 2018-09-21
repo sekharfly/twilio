@@ -1,0 +1,113 @@
+#%RAML 0.8
+title: Bandwidth-API
+version: v1
+/account:
+  displayName: Get Account Information
+  get:
+     responses: 
+       200:
+         body: 
+           application/json:
+/availableNumbers:
+      displayName: Get Available Numbers
+      get:
+        responses: 
+          200:
+            body: 
+             application/json:
+        queryParameters: 
+          areaCode:
+           required: false
+          quantity :
+           required: false
+          enableTNDetail:
+           required: false
+            
+/orders:
+      displayName: create a order and get order details
+      get:
+        description: get order details
+        queryParameters: 
+          page:
+           required: true
+          size:
+           required: true
+        responses: 
+          200:
+            body: 
+              application/json:
+      post:
+        description: Create a order
+        body: 
+          application/json:
+        responses: 
+          200:
+            body: 
+              application/json:
+/sites:
+      displayName: Get All Sites
+      get:
+        description: Retrieve a list of all the sites associated with the account
+        responses: 
+          200:
+            body: 
+              application/json:
+          400: 
+            body: 
+              application/json: 
+      post: 
+        description: Add a site to the account
+        body: 
+          application/json:
+            example : |
+              {
+                  "Site": {
+                    "Name": "Raleigh",
+                    "Description": "SIP gateway",
+                    "CustomerName": "BW",
+                    "Address": {
+                      "HouseNumber": "900",
+                      "StreetName": "Main Campus Drive",
+                    "City": "Raleigh",
+                      "StateCode": "NC",
+                      "ZipCode": "27606",
+                      "AddressType": "Service"
+                    }
+                  }
+                }
+                
+        responses: 
+          201: 
+            description: The site has been successfully added to the account
+            body: 
+              application/xml:    
+          400: 
+            description: Information is missing from the body of the add site request
+            body: 
+              application/xml:  
+                 
+      /{siteId}:
+        displayName: Get By SiteId 
+        get:
+          description: Retrieve the information associated with the site id
+          responses: 
+            200:
+              body: 
+                application/json:           
+/sites1:
+      displayName: Get All Sites
+      get:
+        queryParameters: 
+          siteId:
+           required: true
+          sippeers:
+           required: true
+          tns:
+           required: true
+        responses: 
+          200:
+            body: 
+              application/json:
+           
+      
+      

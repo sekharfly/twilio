@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <choice-exception-strategy name="global-exception-strategyChoice_Exception_Strategy">
+         <catch-exception-strategy enableNotifications="false" logException="false" doc:name="Catch Exception Strategy">
+            <set-property propertyName="http.status" value="#[message.inboundProperties.'http.status']" doc:name="Property" />
+            <json:xml-to-json-transformer doc:name="XML to JSON" />
+            <logger message="#['\n'] #[&quot;Status Code : &quot;+message.inboundProperties.'http.status'] #['\n'] #[&quot;Response : &quot; + payload]" level="INFO" doc:name="Logger" />
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+</mule>
